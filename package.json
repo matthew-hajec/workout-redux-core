@@ -1,0 +1,11 @@
+{
+  "name": "workout-redux-core",
+  "version": "1.0.0",
+  "description": "Redux state to support workout functions",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}
