@@ -556,3 +556,92 @@ test("deletes a routine", () => {
 
   expect(store.getState().workout.routines).toEqual({});
 });
+
+// ==============================
+// Active Routine Tests
+// ==============================
+
+test("sets the active routine", () => {
+  const store = createTestStore();
+
+  store.dispatch(actions.addRoutine(testRoutine));
+
+  store.dispatch(actions.activateRoutine(testRoutine.id));
+
+  expect(store.getState().workout.activeRoutine).not.toBeNull();
+  expect(store.getState().workout.activeRoutine!.id).toEqual(testRoutine.id);
+});
+
+test('sets the active routine to "null" when no routine is active', () => {
+  const store = createTestStore();
+
+  store.dispatch(actions.deactivateRoutine());
+
+  expect(store.getState().workout.activeRoutine).toBeNull();
+});
+
+test("creates the isCompleted property and sets it to false when a routine is activated", () => {
+  const store = createTestStore();
+
+  store.dispatch(actions.addExercise(testExercise));
+
+  store.dispatch(actions.addRoutine(testRoutine));
+
+  store.dispatch(actions.activateRoutine(testRoutine.id));
+
+  store.dispatch(
+    actions.addDayToRoutine({
+      routineID: testRoutine.id,
+      day: testDay,
+    })
+  );
+
+  store.dispatch(
+    actions.addExerciseToRoutine({
+      routineID: testRoutine.id,
+      dayIndex: 0,
+      exerciseID: testExercise.id,
+    })
+  );
+
+  expect(store.getState().workout.activeRoutine).not.toBeNull();
+
+  store.getState().workout.activeRoutine!.days.forEach((day) => {
+    day.exercises.forEach((e) =>
+      e.sets.forEach((s) => expect(s.isCompleted).toBe(false))
+    );
+  });
+});
+
+test("creates the weight property and sets it to something besides undefined when a routine is activated", () => {
+  const store = createTestStore();
+
+  store.dispatch(actions.addExercise(testExercise));
+
+  store.dispatch(actions.addRoutine(testRoutine));
+
+  store.dispatch(actions.activateRoutine(testRoutine.id));
+
+  store.dispatch(
+    actions.addDayToRoutine({
+      routineID: testRoutine.id,
+      day: testDay,
+    })
+  );
+
+  store.dispatch(
+    actions.addExerciseToRoutine({
+      routineID: testRoutine.id,
+      dayIndex: 0,
+      exerciseID: testExercise.id,
+    })
+  );
+
+  expect(store.getState().workout.activeRoutine).not.toBeNull();
+
+  store.getState().workout.activeRoutine!.days.forEach((day) => {
+    day.exercises.forEach((e) =>
+      e.sets.forEach((s) => expect(s.weight).not.toBe(undefined))
+    );
+  });
+});

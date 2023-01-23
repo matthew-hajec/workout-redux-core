@@ -3,7 +3,7 @@ import { createSlice } from '@reduxjs/toolkit';
 import { DEFAULT_REPS_VOLUME, DEFAULT_SETS, DEFAULT_TIMED_VOLUME } from '../defaults';
 import { Exercise, TrackingType } from '../types/Exercise';
 
-import type { Routine } from "../types/Routine";
+import type { Routine, ActiveRoutine } from "../types/Routine";
 
 import type { PayloadAction } from "@reduxjs/toolkit";
 
@@ -16,6 +16,7 @@ interface WorkoutState {
   routines: {
     [id: string]: Routine;
   };
+  activeRoutine: ActiveRoutine | null;
 }
 
 const name = "workout";
@@ -25,6 +26,7 @@ const initialState: WorkoutState = {
   exercises: {},
   routineIDs: [],
   routines: {},
+  activeRoutine: null,
 };
 
 const reducers = {
@@ -198,6 +200,23 @@ const reducers = {
       exerciseIndex
     ].sets.splice(setIndex, 1);
   },
+  activateRoutine: (state, action: PayloadAction<string>) => {
+    const activeRoutine = { ...state.routines[action.payload] };
+
+    activeRoutine.days.forEach((d) =>
+      d.forEach((e) =>
+        e.forEach((s) => {
+          s.isCompleted = false;
+          s.setWeight = 0;
+        })
+      )
+    );
+
+    state.activeRoutine = activeRoutine;
+  },
+  deactivateRoutine: (state) => {
+    state.activeRoutine = null;
+  },
 };
 
 export const workoutSlice = createSlice({
@@ -221,6 +240,8 @@ export const {
   updateSetInRoutine,
   addSetToRoutine,
   deleteSetFromRoutine,
+  activateRoutine,
+  deactivateRoutine,
 } = workoutSlice.actions;
 
 export default workoutSlice.reducer;
