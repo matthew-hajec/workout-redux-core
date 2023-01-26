@@ -162,52 +162,48 @@ const reducers = {
       ...updatedSet,
     };
   },
-  addSetToRoutine: (
+  updateSetCountInRoutine: (
     state,
     action: PayloadAction<{
       routineID: string;
       dayIndex: number;
       exerciseIndex: number;
+      setCount: number;
     }>
   ) => {
-    const { routineID, dayIndex, exerciseIndex } = action.payload;
+    const { routineID, dayIndex, exerciseIndex, setCount } = action.payload;
 
-    state.routines[routineID].days[dayIndex].exercises[exerciseIndex].sets.push(
-      {
+    const exercise =
+      state.routines[routineID].days[dayIndex].exercises[exerciseIndex];
+
+    if (setCount > exercise.sets.length) {
+      const newSets = Array(setCount - exercise.sets.length).fill({
         volume:
-          state.exercises[
-            state.routines[routineID].days[dayIndex].exercises[exerciseIndex]
-              .exerciseID
-          ].trackingType === TrackingType.Reps
+          state.exercises[exercise.exerciseID].trackingType ===
+          TrackingType.Reps
             ? DEFAULT_REPS_VOLUME
             : DEFAULT_TIMED_VOLUME,
         isPlusSet: false,
-      }
-    );
-  },
-  deleteSetFromRoutine: (
-    state,
-    action: PayloadAction<{
-      routineID: string;
-      dayIndex: number;
-      exerciseIndex: number;
-      setIndex: number;
-    }>
-  ) => {
-    const { routineID, dayIndex, exerciseIndex, setIndex } = action.payload;
+      });
 
-    state.routines[routineID].days[dayIndex].exercises[
-      exerciseIndex
-    ].sets.splice(setIndex, 1);
+      exercise.sets.push(...newSets);
+    } else {
+      exercise.sets.splice(setCount);
+    }
   },
   activateRoutine: (state, action: PayloadAction<string>) => {
-    const activeRoutine = { ...state.routines[action.payload] };
+    const activeRoutine: ActiveRoutine = {
+      ...state.routines[action.payload],
+      currentDayIndex: null,
+      currentDayStartTmDt: null,
+      startTmDt: null,
+    };
 
     activeRoutine.days.forEach((d) =>
-      d.forEach((e) =>
-        e.forEach((s) => {
+      d.exercises.forEach((e) =>
+        e.sets.forEach((s) => {
           s.isCompleted = false;
-          s.setWeight = 0;
+          s.weight = 0;
         })
       )
     );
@@ -216,6 +212,48 @@ const reducers = {
   },
   deactivateRoutine: (state) => {
     state.activeRoutine = null;
+  },
+  startDay: (
+    state,
+    action: PayloadAction<{
+      dayIndex: number;
+      startTmDt: number;
+    }>
+  ) => {
+    state.activeRoutine.currentDayIndex = action.payload.dayIndex;
+    state.activeRoutine.currentDayStartTmDt = action.payload.startTmDt;
+
+    if (state.activeRoutine.startTmDt === null) {
+      state.activeRoutine.startTmDt = action.payload.startTmDt;
+    }
+  },
+  updateSetCountInActiveRoutine: (
+    state: WorkoutState,
+    action: PayloadAction<{
+      exerciseIndex: number;
+      dayIndex: number;
+      setCount: number;
+    }>
+  ) => {
+    const { exerciseIndex, dayIndex, setCount } = action.payload;
+
+    const exercise =
+      state.activeRoutine?.days[dayIndex].exercises[exerciseIndex];
+
+    if (!exercise) {
+      throw new Error(state.activeRoutine ? "Invalid day index" : "No routine");
+    }
+
+    if (setCount > exercise.sets.length) {
+      const newSets = Array(setCount - exercise.sets.length).fill({
+        volume: DEFAULT_REPS_VOLUME,
+        isPlusSet: false,
+      });
+
+      exercise.sets.push(...newSets);
+    } else {
+      exercise.sets.splice(setCount);
+    }
   },
 };
 
@@ -238,10 +276,11 @@ export const {
   updateExerciseInRoutine,
   removeExerciseFromRoutine,
   updateSetInRoutine,
-  addSetToRoutine,
-  deleteSetFromRoutine,
+  updateSetCountInRoutine,
   activateRoutine,
   deactivateRoutine,
+  startDay,
+  updateSetCountInActiveRoutine,
 } = workoutSlice.actions;
 
 export default workoutSlice.reducer;

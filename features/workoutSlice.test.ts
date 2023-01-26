@@ -405,7 +405,7 @@ test("updates the isPlusSet in an exercise in a day", () => {
   ).toEqual(newIsPlusSet);
 });
 
-test("adds a new set to an exercise in a day", () => {
+test("increases the number of sets in an exercise in a day", () => {
   const store = createTestStore();
 
   store.dispatch(actions.addRoutine(testRoutine));
@@ -428,20 +428,21 @@ test("adds a new set to an exercise in a day", () => {
   );
 
   store.dispatch(
-    actions.addSetToRoutine({
+    actions.updateSetCountInRoutine({
       routineID: testRoutine.id,
       dayIndex: 0,
       exerciseIndex: 0,
+      setCount: DEFAULT_SETS + 2,
     })
   );
 
   expect(
     store.getState().workout.routines[testRoutine.id].days[0].exercises[0].sets
       .length
-  ).toEqual(DEFAULT_SETS + 1);
+  ).toEqual(DEFAULT_SETS + 2);
 });
 
-test("removes a set from an exercise in a day", () => {
+test("decreases the number of sets in an exercise in a day", () => {
   const store = createTestStore();
 
   store.dispatch(actions.addRoutine(testRoutine));
@@ -464,18 +465,18 @@ test("removes a set from an exercise in a day", () => {
   );
 
   store.dispatch(
-    actions.deleteSetFromRoutine({
+    actions.updateSetCountInRoutine({
       routineID: testRoutine.id,
       dayIndex: 0,
       exerciseIndex: 0,
-      setIndex: 0,
+      setCount: DEFAULT_SETS - 2,
     })
   );
 
   expect(
     store.getState().workout.routines[testRoutine.id].days[0].exercises[0].sets
       .length
-  ).toEqual(DEFAULT_SETS - 1);
+  ).toEqual(DEFAULT_SETS - 2);
 });
 
 test("removes an exercise from a routine", () => {
@@ -644,4 +645,129 @@ test("creates the weight property and sets it to something besides undefined whe
       e.sets.forEach((s) => expect(s.weight).not.toBe(undefined))
     );
   });
+});
+
+test("sets the currentDayIndex to null when a routine is activated", () => {
+  const store = createTestStore();
+
+  store.dispatch(actions.addRoutine(testRoutine));
+
+  store.dispatch(actions.activateRoutine(testRoutine.id));
+
+  expect(store.getState().workout.activeRoutine?.currentDayIndex).toBeNull();
+});
+
+test("starts a day", () => {
+  const store = createTestStore();
+
+  store.dispatch(actions.addRoutine(testRoutine));
+
+  store.dispatch(actions.activateRoutine(testRoutine.id));
+
+  const startTmDt = Date.now();
+
+  store.dispatch(
+    actions.startDay({
+      dayIndex: 0,
+      startTmDt,
+    })
+  );
+
+  expect(store.getState().workout.activeRoutine?.currentDayIndex).toEqual(0);
+  expect(store.getState().workout.activeRoutine?.currentDayStartTmDt).toBe(
+    startTmDt
+  );
+  expect(store.getState().workout.activeRoutine?.startTmDt).toBe(startTmDt);
+});
+
+test("increases the number of sets in the active workout", () => {
+  const store = createTestStore();
+
+  store.dispatch(actions.addExercise(testExercise));
+
+  store.dispatch(actions.addRoutine(testRoutine));
+
+  store.dispatch(
+    actions.addDayToRoutine({
+      routineID: testRoutine.id,
+      day: testDay,
+    })
+  );
+
+  store.dispatch(
+    actions.addExerciseToRoutine({
+      routineID: testRoutine.id,
+      dayIndex: 0,
+      exerciseID: testExercise.id,
+    })
+  );
+
+  store.dispatch(actions.activateRoutine(testRoutine.id));
+
+  const startTmDt = Date.now();
+
+  store.dispatch(
+    actions.startDay({
+      dayIndex: 0,
+      startTmDt,
+    })
+  );
+
+  store.dispatch(
+    actions.updateSetCountInActiveRoutine({
+      dayIndex: 0,
+      exerciseIndex: 0,
+      setCount: DEFAULT_SETS + 2,
+    })
+  );
+
+  expect(
+    store.getState().workout.activeRoutine?.days[0].exercises[0].sets.length
+  ).toBe(DEFAULT_SETS + 2);
+});
+
+test("decreases the number of sets in the active workout", () => {
+  const store = createTestStore();
+
+  store.dispatch(actions.addExercise(testExercise));
+
+  store.dispatch(actions.addRoutine(testRoutine));
+
+  store.dispatch(
+    actions.addDayToRoutine({
+      routineID: testRoutine.id,
+      day: testDay,
+    })
+  );
+
+  store.dispatch(
+    actions.addExerciseToRoutine({
+      routineID: testRoutine.id,
+      dayIndex: 0,
+      exerciseID: testExercise.id,
+    })
+  );
+
+  store.dispatch(actions.activateRoutine(testRoutine.id));
+
+  const startTmDt = Date.now();
+
+  store.dispatch(
+    actions.startDay({
+      dayIndex: 0,
+      startTmDt,
+    })
+  );
+
+  store.dispatch(
+    actions.updateSetCountInActiveRoutine({
+      dayIndex: 0,
+      exerciseIndex: 0,
+      setCount: DEFAULT_SETS - 2,
+    })
+  );
+
+  expect(
+    store.getState().workout.activeRoutine?.days[0].exercises[0].sets.length
+  ).toBe(DEFAULT_SETS - 2);
 });
